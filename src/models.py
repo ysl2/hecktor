@@ -3,6 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from layers import BasicConv3d, FastSmoothSeNormConv3d, RESseNormConv3d, UpConv
+import copy
 
 
 class BaselineUNet(nn.Module):
@@ -65,7 +66,7 @@ class FastSmoothSENormDeepUNet_supervision_skip_no_drop(nn.Module):
     that it why it has such an awkward name."""
 
     def __init__(self, in_channels, n_cls, n_filters, reduction=2, return_logits=False):
-        super(FastSmoothSENormDeepUNet_supervision_skip_no_drop, self).__init__()
+        super().__init__()
         self.in_channels = in_channels
         self.n_cls = 1 if n_cls == 2 else n_cls
         self.n_filters = n_filters
@@ -117,22 +118,28 @@ class FastSmoothSENormDeepUNet_supervision_skip_no_drop(nn.Module):
 
     def forward(self, x):
 
-        ds0 = self.block_1_2_left(self.block_1_1_left(x))
-        ds1 = self.block_2_3_left(self.block_2_2_left(self.block_2_1_left(self.pool_1(ds0))))
-        ds2 = self.block_3_3_left(self.block_3_2_left(self.block_3_1_left(self.pool_2(ds1))))
-        ds3 = self.block_4_3_left(self.block_4_2_left(self.block_4_1_left(self.pool_3(ds2))))
-        x = self.block_5_3_left(self.block_5_2_left(self.block_5_1_left(self.pool_4(ds3))))
+        try:
+            ds0 = self.block_1_2_left(self.block_1_1_left(x))
+            ds1 = self.block_2_3_left(self.block_2_2_left(self.block_2_1_left(self.pool_1(ds0))))
+            ds2 = self.block_3_3_left(self.block_3_2_left(self.block_3_1_left(self.pool_2(ds1))))
+            ds3 = self.block_4_3_left(self.block_4_2_left(self.block_4_1_left(self.pool_3(ds2))))
+            x = self.block_5_3_left(self.block_5_2_left(self.block_5_1_left(self.pool_4(ds3))))
+        except Exception:
+            return torch.zeros(list(x.shape), requires_grad=True).cuda()
 
-        x = self.block_4_2_right(self.block_4_1_right(torch.cat([self.upconv_4(x), ds3], 1)))
+        x = self.block_4_2_right(self.block_4_1_right(torch.cat([self._align_tensor(self.upconv_4(x), ds3), ds3], 1)))
         sv4 = self.vision_4(x)
 
-        x = self.block_3_2_right(self.block_3_1_right(torch.cat([self.upconv_3(x), ds2], 1)))
+        x = self.block_3_2_right(self.block_3_1_right(torch.cat([self._align_tensor(self.upconv_3(x), ds2), ds2], 1)))
         sv3 = self.vision_3(x)
 
-        x = self.block_2_2_right(self.block_2_1_right(torch.cat([self.upconv_2(x), ds1], 1)))
+        x = self.block_2_2_right(self.block_2_1_right(torch.cat([self._align_tensor(self.upconv_2(x), ds1), ds1], 1)))
         sv2 = self.vision_2(x)
 
-        x = self.block_1_1_right(torch.cat([self.upconv_1(x), ds0], 1))
+        x = self.block_1_1_right(torch.cat([self._align_tensor(self.upconv_1(x), ds0), ds0], 1))
+        sv4 = self._align_tensor(sv4, x)
+        sv3 = self._align_tensor(sv3, x)
+        sv2 = self._align_tensor(sv2, x)
         x = x + sv4 + sv3 + sv2
         x = self.block_1_2_right(x)
 
@@ -145,3 +152,27 @@ class FastSmoothSENormDeepUNet_supervision_skip_no_drop(nn.Module):
                 return torch.sigmoid(x)
             else:
                 return F.softmax(x, dim=1)
+
+
+    @staticmethod
+    def _align_tensor(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+        """align tensor
+
+        Args:
+            a (torch.Tensor): the tensor to be aligned
+            b (torch.Tensor): the tensor as criterion
+
+        Returns:
+            torch.Tensor: aligned tensor
+        """
+        a_shape = list(copy.deepcopy(a.shape))
+        for i in range(len(a_shape)):
+            if a_shape[i] != b.shape[i]:
+                a_shape[i] = abs(a_shape[i] - b.shape[i])
+                # ! <<< open debug yusongli
+                # new = torch.randn(a_shape).cuda()
+                new = torch.zeros(a_shape).cuda()
+                # ! >>> clos debug
+                a = torch.cat([a, new], dim=i)
+                a_shape = list(copy.deepcopy(a.shape))
+        return a

@@ -45,19 +45,23 @@ def main(args):
     # train and val data paths:
     all_paths = utils.get_paths_to_patient_files(path_to_imgs=path_to_data, append_mask=True)
     train_paths, val_paths = utils.get_train_val_paths(all_paths=all_paths, path_to_train_val_pkl=path_to_pkl)
-    train_paths = train_paths[:2]
-    val_paths = val_paths[:2]
+    # train_paths = train_paths[:2]
+    # val_paths = val_paths[:2]
 
     # train and val data transforms:
     train_transforms = transforms.Compose([
         transforms.RandomRotation(p=0.5, angle_range=[0, 45]),
         transforms.Mirroring(p=0.5),
-        transforms.NormalizeIntensity(),
+        # ! <<< open debug yusongli
+        # transforms.NormalizeIntensity(),
+        # ! >>> clos debug
         transforms.ToTensor()
     ])
 
     val_transforms = transforms.Compose([
-        transforms.NormalizeIntensity(),
+        # ! <<< open debug yusongli
+        # transforms.NormalizeIntensity(),
+        # ! >>> clos debug
         transforms.ToTensor()
     ])
 

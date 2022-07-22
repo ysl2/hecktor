@@ -33,18 +33,18 @@ def main(args):
     reduction = int(config['reduction'])
 
     # test data paths:
-    all_paths = utils.get_paths_to_patient_files(path_to_imgs=path_to_data, append_mask=False)
+    all_paths = utils.get_paths_to_patient_files(path_to_imgs=path_to_data, append_mask=False, predict=True)
 
     # input transforms:
     input_transforms = transforms.Compose([
-        transforms.NormalizeIntensity(),
+        # transforms.NormalizeIntensity(),
         transforms.ToTensor(mode='test')
     ])
 
     # ensemble output transforms:
     output_transforms = [
         transforms.InverseToTensor(),
-        transforms.CheckOutputShape(shape=(144, 144, 144))
+        # transforms.CheckOutputShape(shape=(144, 144, 144))
     ]
     if not probs:
         output_transforms.append(transforms.ProbsToLabels())
@@ -68,6 +68,7 @@ def main(args):
     )
 
     # check if multiple paths were provided to run an ensemble:
+    import ipdb; ipdb.set_trace()  # ! debug yusongli
     if isinstance(path_to_weights, list):
         predictor_.ensemble_predict()
 

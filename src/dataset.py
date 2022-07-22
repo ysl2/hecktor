@@ -1,6 +1,7 @@
 import numpy as np
 import nibabel as nib
 from torch.utils.data import Dataset
+import pathlib
 
 
 class HecktorDataset(Dataset):
@@ -48,9 +49,22 @@ class HecktorDataset(Dataset):
     def __getitem__(self, index):
         sample = dict()
 
-        id_ = self.paths_to_samples[index][0].parent.stem
-        sample['id'] = id_
+        # ! <<< open debug yusongli
+        # id_ = self.paths_to_samples[index][0].parent.stem
+        # sample['id'] = id_
+        # ! >>> clos debug
 
+        # ! <<< open debug yusongli
+        sample['id'] = pathlib.Path(self.paths_to_samples[index][0]).name.split('_')[1]
+        # ! >>> clos debug
+
+        # ! <<< open debug yusongli
+        # img = []
+        # for i in range(self.num_of_seqs):
+        #     temp = self.paths_to_samples[index][i]
+        #     temp = self.read_data(temp)
+        #     img.append(temp)
+        # ! >>> clos debug
         img = [self.read_data(self.paths_to_samples[index][i]) for i in range(self.num_of_seqs)]
         img = np.stack(img, axis=-1)
         sample['input'] = img
@@ -64,8 +78,12 @@ class HecktorDataset(Dataset):
 
             sample['target'] = mask
 
-        else:
-            sample['affine'] = self.read_data(self.paths_to_samples[index][0], False).affine
+        # ! <<< open debug yusongli
+        # else:
+        #     sample['affine'] = self.read_data(self.paths_to_samples[index][0], False).affine
+        sample['affine'] = self.read_data(self.paths_to_samples[index][0], False).affine
+        # ! >>> clos debug
+
         if self.transforms:
             sample = self.transforms(sample)
 

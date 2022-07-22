@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from skimage.transform import rotate
+import contextlib
 
 
 class Compose:
@@ -64,8 +65,8 @@ class NormalizeIntensity:
     def __call__(self, sample):
         img = sample['input']
         img[:, :, :, 0] = self.normalize_ct(img[:, :, :, 0])
-        img[:, :, :, 1] = self.normalize_pt(img[:, :, :, 1])
-
+        with contextlib.suppress(Exception):
+            img[:, :, :, 1] = self.normalize_pt(img[:, :, :, 1])
         sample['input'] = img
         return sample
 

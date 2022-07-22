@@ -4,7 +4,7 @@ from torch import nn
 
 class DiceLoss(nn.Module):
     def __init__(self):
-        super(DiceLoss, self).__init__()
+        super().__init__()
         self.smooth = 1
 
     def forward(self, input, target):
@@ -17,7 +17,7 @@ class DiceLoss(nn.Module):
 
 class FocalLoss(nn.Module):
     def __init__(self, gamma=2):
-        super(FocalLoss, self).__init__()
+        super().__init__()
         self.gamma = gamma
         self.eps = 1e-3
 
@@ -30,7 +30,7 @@ class FocalLoss(nn.Module):
 
 class Dice_and_FocalLoss(nn.Module):
     def __init__(self, gamma=2):
-        super(Dice_and_FocalLoss, self).__init__()
+        super().__init__()
         self.dice_loss = DiceLoss()
         self.focal_loss = FocalLoss(gamma)
 

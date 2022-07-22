@@ -5,9 +5,11 @@ import numpy as np
 import SimpleITK as sitk
 import torch
 from torch.nn import functional as F
+import pathlib
+import sys
 
 
-def get_paths_to_patient_files(path_to_imgs, append_mask=True):
+def get_paths_to_patient_files(path_to_imgs, append_mask=True, predict=False):
     """
     Get paths to all data samples, i.e., CT & PET images (and a mask) for each patient.
 
@@ -27,18 +29,35 @@ def get_paths_to_patient_files(path_to_imgs, append_mask=True):
     """
     path_to_imgs = pathlib.Path(path_to_imgs)
 
-    patients = [p for p in os.listdir(path_to_imgs) if os.path.isdir(path_to_imgs / p)]
+    # ! <<< open debug yusongli
     paths = []
-    for p in patients:
-        path_to_ct = path_to_imgs / p / (p + '_ct.nii.gz')
-        path_to_pt = path_to_imgs / p / (p + '_pt.nii.gz')
-
-        if append_mask:
-            path_to_mask = path_to_imgs / p / (p + '_ct_gtvt.nii.gz')
-            paths.append((path_to_ct, path_to_pt, path_to_mask))
-        else:
-            paths.append((path_to_ct, path_to_pt))
+    if predict == True:
+        for i in range(1332, 1664):
+            test_ct = pathlib.Path(f'/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/val_images/Z2_{i:04d}_0000.nii.gz')
+            paths.append((test_ct,))
+        return paths
+    train_pt = None
+    for i in range(1332):
+        train_ct = pathlib.Path(f'/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/train_images/Z2_{i:04d}_0000.nii.gz')
+        train_mask = pathlib.Path(f'/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/train_labels/Z2_{i:04d}.nii.gz')
+        paths.append((train_ct, train_pt, train_mask))
     return paths
+    # ! >>> clos debug
+
+    # ! <<< open debug yusongli
+    # patients = [p for p in os.listdir(path_to_imgs) if os.path.isdir(path_to_imgs / p)]
+    # paths = []
+    # for p in patients:
+    #     path_to_ct = path_to_imgs / p / (p + '_ct.nii.gz')
+    #     path_to_pt = path_to_imgs / p / (p + '_pt.nii.gz')
+
+    #     if append_mask:
+    #         path_to_mask = path_to_imgs / p / (p + '_ct_gtvt.nii.gz')
+    #         paths.append((path_to_ct, path_to_pt, path_to_mask))
+    #     else:
+    #         paths.append((path_to_ct, path_to_pt))
+    # return paths
+    # ! >>> clos debug
 
 
 def get_train_val_paths(all_paths, path_to_train_val_pkl):
@@ -57,17 +76,39 @@ def get_train_val_paths(all_paths, path_to_train_val_pkl):
     (list, list)
         Two lists of paths to train & validation data samples.
     """
-    path_to_train_val_pkl = pathlib.Path(path_to_train_val_pkl)
-    with open(path_to_train_val_pkl) as f:
-        train_val_split = json.load(f)
+    # ! <<< open debug yusongli
+    # path_to_train_val_pkl = pathlib.Path(path_to_train_val_pkl)
+    # with open(path_to_train_val_pkl) as f:
+    #     train_val_split = json.load(f)
+    # train_paths = [path for path in all_paths
+    #                if any(patient_id + '_ct.nii.gz' in str(path[0]) for patient_id in train_val_split['train'])]
 
-    train_paths = [path for path in all_paths
-                   if any(patient_id + '_ct.nii.gz' in str(path[0]) for patient_id in train_val_split['train'])]
+    # val_paths = [path for path in all_paths
+    #              if any(patient_id + '_ct.nii.gz' in str(path[0]) for patient_id in train_val_split['val'])]
 
-    val_paths = [path for path in all_paths
-                 if any(patient_id + '_ct.nii.gz' in str(path[0]) for patient_id in train_val_split['val'])]
+    # return train_paths, val_paths
+    # ! >>> clos debug
+
+    # ! <<< open debug yusongli
+    train_folder = pathlib.Path('/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/train_images')
+    val_folder = pathlib.Path('/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/val_images')
+
+    train_paths = [
+        (
+            pathlib.Path(f'/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/train_images/Z2_{i:04d}_0000.nii.gz'),
+            pathlib.Path(f'/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/train_labels/Z2_{i:04d}.nii.gz'),
+        ) for i in range(1332)
+    ]
+    val_paths = [
+        (
+            f'/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/val_images/Z2_{i:04d}_0000.nii.gz',
+            f'/home/yusongli/_dataset/shidaoai/img/_out/nn/DATASET/nnUNet_raw_data_base/nnUNet_raw_data/Task602_Z2/val_labels/Z2_{i:04d}.nii.gz',
+        ) for i in range(1332, 1664)
+    ]
 
     return train_paths, val_paths
+    # ! >>> clos debug
+
 
 
 def read_nifti(path):

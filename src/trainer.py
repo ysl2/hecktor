@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
+import nibabel as nib
 
 
 class ModelTrainer:
@@ -106,6 +107,10 @@ class ModelTrainer:
 
             # Each epoch has a training and validation phase:
             for phase in ['train', 'val']:
+                # ! <<< open debug yusongli
+                # if phase == 'train':
+                #     continue
+                # ! >>> clos debug
                 if phase == 'train':
                     self.model.train()  # Set model to training mode
                 else:
@@ -127,6 +132,16 @@ class ModelTrainer:
 
                         loss = self.criterion(output, target)
                         metric = self.metric(output.detach(), target.detach())
+
+                        # ! <<< open debug yusongli
+                        if phase == 'val':
+                            affine = sample['affine'][0].numpy()
+                            preds = torch.squeeze((input > 0.5).float()).cpu().detach().numpy()
+                            preds = nib.Nifti1Image(preds, affine=affine)
+                            savename = pathlib.Path(f"/home/yusongli/Documents/hecktor/model/results/pred/{str(epoch)}/Z2_{sample['id'][0]}.nii.gz")
+                            savename.parent.mkdir(parents=True, exist_ok=True)
+                            nib.save(preds, savename)
+                        # ! >>> clos debug
 
                         # Losses and metric:
                         phase_loss += loss.item()
